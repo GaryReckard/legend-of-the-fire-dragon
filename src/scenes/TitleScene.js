@@ -1,18 +1,51 @@
 import { Scene } from '../core/Scene.js';
+import { hasSave, clearSave } from '../core/Save.js';
 
 export class TitleScene extends Scene {
   constructor(game) {
     super(game);
     this.t = 0;
+    this.sel = 0;
+    this.confirmNewGame = false;
   }
   enter() {
     this.t = 0;
     this.game.state = 'title';
+    this.hasSave = hasSave();
+    this.sel = this.hasSave ? 0 : 0; // 0=Continue/New, 1=New (when save exists)
+    this.confirmNewGame = false;
+  }
+  options() {
+    return this.hasSave ? ['Continue', 'New Game'] : ['New Game'];
   }
   update(dt) {
     this.t += dt;
-    if (this.game.input.wasPressed('confirm') || this.game.input.wasPressed('attack') || this.game.input.wasPressed('action')) {
-      this.game.changeScene('overworld');
+    const input = this.game.input;
+    const opts = this.options();
+
+    if (this.confirmNewGame) {
+      // y/n confirm
+      if (input.wasPressed('confirm') || input.wasPressed('attack') || input.wasPressed('action')) {
+        clearSave();
+        this.confirmNewGame = false;
+        this.game.changeScene('charcreate');
+      } else if (input.wasPressed('pause')) {
+        this.confirmNewGame = false;
+      }
+      return;
+    }
+
+    if (input.wasPressed('up'))   this.sel = (this.sel - 1 + opts.length) % opts.length;
+    if (input.wasPressed('down')) this.sel = (this.sel + 1) % opts.length;
+    if (input.wasPressed('confirm') || input.wasPressed('attack') || input.wasPressed('action')) {
+      const label = opts[this.sel];
+      if (label === 'Continue') {
+        if (this.game.load()) this.game.changeScene('overworld');
+        else this.game.changeScene('charcreate');
+      } else if (label === 'New Game') {
+        if (this.hasSave) this.confirmNewGame = true;
+        else this.game.changeScene('charcreate');
+      }
     }
   }
   biomeAt() { return '-'; }
@@ -60,15 +93,39 @@ export class TitleScene extends Scene {
     ctx.font = '14px "Courier New", monospace';
     ctx.fillText('The world burns. Three lands stand between you and the beast.', W / 2, H / 2 + 28);
 
-    if (Math.floor(this.t * 2) % 2 === 0) {
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 16px "Courier New", monospace';
-      ctx.fillText('PRESS ENTER · J · or E TO BEGIN', W / 2, H / 2 + 70);
-    }
+    // Menu (Continue / New Game)
+    const opts = this.options();
+    ctx.font = 'bold 18px "Courier New", monospace';
+    opts.forEach((label, i) => {
+      const ly = H / 2 + 70 + i * 32;
+      if (this.sel === i) {
+        ctx.fillStyle = '#ffaa44';
+        ctx.fillText('▸ ' + label + ' ◂', W / 2, ly);
+      } else {
+        ctx.fillStyle = '#888';
+        ctx.fillText(label, W / 2, ly);
+      }
+    });
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px "Courier New", monospace';
+    ctx.fillText('↑/↓ select · Enter to confirm', W / 2, H / 2 + 70 + opts.length * 32 + 12);
 
     ctx.fillStyle = '#888';
     ctx.font = '11px "Courier New", monospace';
     ctx.fillText('WASD/Arrows move · J sword · K bow · L shield · E action · I inv · C craft', W / 2, H - 30);
-    ctx.fillText('` or F1 debug overlay · F2 god · 1/2/3 teleport · B boss · H heal · M mats', W / 2, H - 14);
+    ctx.fillText('` or F1 debug overlay · F2 god · 1/2/3/4 teleport · B boss · H heal · M mats · Esc pause', W / 2, H - 14);
+
+    // New-game confirm overlay
+    if (this.confirmNewGame) {
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#ff3322';
+      ctx.font = 'bold 28px "Courier New", monospace';
+      ctx.fillText('Overwrite existing save?', W / 2, H / 2 - 20);
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px "Courier New", monospace';
+      ctx.fillText('Press ENTER to confirm, Esc to cancel.', W / 2, H / 2 + 16);
+    }
   }
 }

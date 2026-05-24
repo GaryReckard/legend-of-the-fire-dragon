@@ -9,8 +9,16 @@ export class Menu {
     this.open = false;
     this.kind = null; // 'inventory' | 'craft'
     this.sel = 0;
+    this.scrollTop = 0;     // first visible row index
     this.flash = null;
     this.flashT = 0;
+  }
+
+  // Keep `sel` in the visible window. Called each frame before draw.
+  _clampScroll(listLen, visibleRows) {
+    if (this.sel < this.scrollTop) this.scrollTop = this.sel;
+    else if (this.sel >= this.scrollTop + visibleRows) this.scrollTop = this.sel - visibleRows + 1;
+    this.scrollTop = Math.max(0, Math.min(this.scrollTop, Math.max(0, listLen - visibleRows)));
   }
 
   toggle(kind, game) {
@@ -18,6 +26,7 @@ export class Menu {
     this.open = true;
     this.kind = kind;
     this.sel = 0;
+    this.scrollTop = 0;
   }
 
   update(dt, game) {
@@ -65,7 +74,7 @@ export class Menu {
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.fillRect(0, 0, W, H);
-    const w = 460, h = 360;
+    const w = 500, h = 480;
     const x = (W - w) / 2, y = (H - h) / 2;
     ctx.fillStyle = '#181820';
     ctx.fillRect(x, y, w, h);
@@ -82,30 +91,43 @@ export class Menu {
     ctx.font = '13px "Courier New", monospace';
     ctx.textAlign = 'left';
 
+    const listStartY = y + 48;
+    const listEndY = y + h - 56;
+    const rowH = this.kind === 'inventory' ? 22 : 50;
+    const visibleRows = Math.floor((listEndY - listStartY) / rowH);
+
     if (this.kind === 'inventory') {
       const list = game.inventory.list();
+      this._clampScroll(list.length, visibleRows);
       if (list.length === 0) {
         ctx.fillStyle = '#888';
-        ctx.fillText('(empty)', x + 20, y + 60);
+        ctx.fillText('(empty)', x + 20, listStartY + 10);
       }
-      list.forEach((it, i) => {
-        const ly = y + 60 + i * 22;
+      const end = Math.min(list.length, this.scrollTop + visibleRows);
+      for (let i = this.scrollTop; i < end; i++) {
+        const it = list[i];
+        const ly = listStartY + (i - this.scrollTop) * rowH;
         if (i === this.sel) {
           ctx.fillStyle = 'rgba(255,170,68,0.2)';
-          ctx.fillRect(x + 10, ly - 4, w - 20, 20);
+          ctx.fillRect(x + 10, ly - 4, w - 20, rowH - 2);
         }
         ctx.fillStyle = '#fff';
         ctx.fillText(`${it.icon ?? '?'}  ${it.name}  x${it.count}`, x + 20, ly + 10);
-      });
+      }
+      drawScrollbar(ctx, x + w - 12, listStartY, 6, listEndY - listStartY, list.length, visibleRows, this.scrollTop);
       ctx.fillStyle = '#888';
       ctx.font = '11px "Courier New", monospace';
       ctx.fillText('↑/↓ select · Enter/E to use · I to close', x + 16, y + h - 18);
     } else {
-      RECIPES.forEach((r, i) => {
-        const ly = y + 60 + i * 50;
+      const list = RECIPES;
+      this._clampScroll(list.length, visibleRows);
+      const end = Math.min(list.length, this.scrollTop + visibleRows);
+      for (let i = this.scrollTop; i < end; i++) {
+        const r = list[i];
+        const ly = listStartY + (i - this.scrollTop) * rowH;
         if (i === this.sel) {
           ctx.fillStyle = 'rgba(255,170,68,0.2)';
-          ctx.fillRect(x + 10, ly - 4, w - 20, 46);
+          ctx.fillRect(x + 10, ly - 4, w - 20, rowH - 2);
         }
         const ok = canCraft(game.inventory, r);
         ctx.fillStyle = ok ? '#fff' : '#888';
@@ -116,10 +138,11 @@ export class Menu {
         ctx.fillText(costStr, x + 20, ly + 26);
         ctx.fillStyle = '#666';
         ctx.fillText(r.desc, x + 20, ly + 40);
-      });
+      }
+      drawScrollbar(ctx, x + w - 12, listStartY, 6, listEndY - listStartY, list.length, visibleRows, this.scrollTop);
       ctx.fillStyle = '#888';
       ctx.font = '11px "Courier New", monospace';
-      ctx.fillText('↑/↓ select · Enter to craft · C to close', x + 16, y + h - 18);
+      ctx.fillText(`↑/↓ select · Enter to craft · C to close   [${this.sel + 1}/${list.length}]`, x + 16, y + h - 18);
     }
 
     if (this.flashT > 0 && this.flash) {
@@ -131,4 +154,16 @@ export class Menu {
 
     ctx.restore();
   }
+}
+
+function drawScrollbar(ctx, x, y, w, h, total, visible, scrollTop) {
+  if (total <= visible) return;            // no scrollbar needed
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillRect(x, y, w, h);
+  const thumbH = Math.max(20, (visible / total) * h);
+  const range = h - thumbH;
+  const t = total - visible;
+  const thumbY = y + (scrollTop / t) * range;
+  ctx.fillStyle = '#ffaa44';
+  ctx.fillRect(x, thumbY, w, thumbH);
 }

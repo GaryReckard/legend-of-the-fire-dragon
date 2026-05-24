@@ -1,14 +1,18 @@
 {
   "name": "legend-of-the-fire-dragon",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "vite": "^5.4.0"
+    "vite": "^5.4.0",
+    "vitest": "^2.1.0",
+    "happy-dom": "^15.7.4"
   }
 }

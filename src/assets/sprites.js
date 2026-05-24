@@ -109,6 +109,50 @@ export function drawTile(ctx, tileId, x, y, tx = 0, ty = 0) {
       ctx.fillRect(x + 10, y + 10, 4, 2);
       break;
     }
+    case T.MUD: {
+      ctx.fillStyle = p.color; ctx.fillRect(x, y, TS, TS);
+      ctx.fillStyle = p.accent;
+      const r = tileHash(tx, ty);
+      const cy = 4 + Math.floor(r * 20);
+      ctx.fillRect(x + 5, y + cy, 4, 2);
+      ctx.fillRect(x + 18, y + ((cy + 12) % 24), 5, 2);
+      break;
+    }
+    case T.REEDS: {
+      ctx.fillStyle = '#5a4030'; ctx.fillRect(x, y, TS, TS);
+      ctx.fillStyle = p.color;
+      for (let i = 0; i < 4; i++) {
+        const rx = x + 4 + i * 6;
+        ctx.fillRect(rx, y + 8, 2, TS - 10);
+      }
+      ctx.fillStyle = p.accent;
+      ctx.fillRect(x + 6, y + 6, 2, 4);
+      ctx.fillRect(x + 18, y + 4, 2, 4);
+      break;
+    }
+    case T.SWAMP_TREE: {
+      ctx.fillStyle = '#5a4030'; ctx.fillRect(x, y, TS, TS);
+      ctx.fillStyle = '#3a2410'; ctx.fillRect(x + TS/2 - 2, y + TS - 12, 4, 12);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(x + TS/2, y + 12, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = p.accent;
+      // dripping moss
+      ctx.fillRect(x + 8, y + 18, 1, 6);
+      ctx.fillRect(x + 22, y + 16, 1, 8);
+      break;
+    }
+    case T.BOG_WATER: {
+      ctx.fillStyle = p.color; ctx.fillRect(x, y, TS, TS);
+      ctx.fillStyle = p.accent;
+      const t = (Date.now() / 600 + tx * 0.4 + ty * 0.3) % 1;
+      ctx.fillRect(x + Math.floor(t * TS), y + 8, 4, 2);
+      ctx.fillRect(x + Math.floor((t + 0.5) % 1 * TS), y + 22, 3, 2);
+      ctx.fillStyle = 'rgba(80,140,90,0.4)';
+      ctx.fillRect(x + 4, y + 14, 8, 2);
+      break;
+    }
     case T.ASH: {
       ctx.fillStyle = p.color; ctx.fillRect(x, y, TS, TS);
       ctx.fillStyle = p.accent;
@@ -244,6 +288,64 @@ export function drawTile(ctx, tileId, x, y, tx = 0, ty = 0) {
       ctx.beginPath(); ctx.arc(x + TS/2, y + TS - 14, 3 * f, 0, Math.PI * 2); ctx.fill();
       break;
     }
+    case T.IRON_ORE:
+    case T.GOLD_ORE: {
+      ctx.fillStyle = '#3b302b'; ctx.fillRect(x, y, TS, TS);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(x + TS/2, y + TS/2 + 2, 11, 0, Math.PI * 2);
+      ctx.fill();
+      // ore flecks
+      ctx.fillStyle = p.accent;
+      ctx.fillRect(x + 8, y + 10, 3, 3);
+      ctx.fillRect(x + 18, y + 16, 3, 3);
+      ctx.fillRect(x + 12, y + 22, 2, 2);
+      ctx.fillRect(x + 22, y + 8, 2, 2);
+      break;
+    }
+    case T.LORE_BOOK: {
+      ctx.fillStyle = '#3a8c3a'; ctx.fillRect(x, y, TS, TS);
+      // book
+      ctx.fillStyle = p.color; ctx.fillRect(x + 8, y + 10, 16, 14);
+      ctx.fillStyle = p.accent; ctx.fillRect(x + 8, y + 10, 16, 2);
+      ctx.fillRect(x + 15, y + 10, 2, 14);
+      // sparkle
+      ctx.fillStyle = '#fff066';
+      const f = (Math.sin(Date.now()/200) + 1) * 0.5;
+      ctx.fillRect(x + 22 - f*2, y + 6, 2, 2);
+      break;
+    }
+    case T.DEATH_CACHE: {
+      ctx.fillStyle = '#3a8c3a'; ctx.fillRect(x, y, TS, TS);
+      // small bone pile / bundle
+      ctx.fillStyle = '#dcb060';
+      ctx.fillRect(x + 7, y + 18, 18, 6);
+      ctx.fillStyle = '#a37127';
+      ctx.fillRect(x + 7, y + 18, 18, 1);
+      // skull on top
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x + 13, y + 10, 6, 6);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x + 14, y + 12, 1, 1);
+      ctx.fillRect(x + 17, y + 12, 1, 1);
+      // glow
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 200, 80, ${0.25 + Math.sin(Date.now()/250)*0.15})`;
+      ctx.beginPath(); ctx.arc(x + TS/2, y + TS/2, 14, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      break;
+    }
+    case T.POWER_ORB: {
+      ctx.fillStyle = '#0a0a14'; ctx.fillRect(x, y, TS, TS);
+      const f = 1 + Math.sin(Date.now()/200) * 0.2;
+      ctx.save();
+      ctx.fillStyle = `rgba(159, 213, 224, ${0.5 + Math.sin(Date.now()/180)*0.2})`;
+      ctx.beginPath(); ctx.arc(x + TS/2, y + TS/2, 12 * f, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(x + TS/2, y + TS/2, 5 * f, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      break;
+    }
     case T.CHEST:
     case T.CHEST_OPEN: {
       ctx.fillStyle = '#62626c'; ctx.fillRect(x, y, TS, TS);
@@ -265,7 +367,15 @@ export function drawTile(ctx, tileId, x, y, tx = 0, ty = 0) {
 
 // ----- Entity sprites -----
 
-export function drawPlayer(ctx, x, y, dir, attacking, hurt) {
+export const SKINS = {
+  blue:   { body: '#3a7ac8', trim: '#1f4a80', hair: '#5a3a1a', name: 'Azure' },
+  red:    { body: '#c84a4a', trim: '#8a1d1d', hair: '#2a1a08', name: 'Crimson' },
+  green:  { body: '#4aa84a', trim: '#1f6f2a', hair: '#5a3a1a', name: 'Forest' },
+  purple: { body: '#9444c8', trim: '#5b1e88', hair: '#1a0a1a', name: 'Violet' },
+};
+
+export function drawPlayer(ctx, x, y, dir, attacking, hurt, skinKey = 'blue') {
+  const skin = SKINS[skinKey] || SKINS.blue;
   // dir: 'up'|'down'|'left'|'right'|'upleft' etc. — we render base + facing accents
   const w = 20, h = 22;
   const px = x - w/2, py = y - h/2;
@@ -274,14 +384,14 @@ export function drawPlayer(ctx, x, y, dir, attacking, hurt) {
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(x, py + h + 1, 8, 3, 0, 0, Math.PI*2); ctx.fill();
 
-  const body = hurt ? '#ff6464' : '#3a7ac8';
+  const body = hurt ? '#ff6464' : skin.body;
   ctx.fillStyle = body; ctx.fillRect(px, py + 8, w, h - 10);
   // tunic trim
-  ctx.fillStyle = '#1f4a80'; ctx.fillRect(px, py + h - 4, w, 2);
+  ctx.fillStyle = skin.trim; ctx.fillRect(px, py + h - 4, w, 2);
   // head
   ctx.fillStyle = '#f0c898'; ctx.fillRect(px + 4, py, w - 8, 9);
   // hair
-  ctx.fillStyle = '#5a3a1a'; ctx.fillRect(px + 4, py, w - 8, 3);
+  ctx.fillStyle = skin.hair; ctx.fillRect(px + 4, py, w - 8, 3);
   // eyes (facing)
   ctx.fillStyle = '#000';
   if (dir.includes('left')) {
@@ -375,6 +485,11 @@ export function drawProjectile(ctx, x, y, kind) {
     ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#fff066';
     ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+  } else if (kind === 'thorn') {
+    ctx.fillStyle = '#2a6f3a';
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#5db05a';
+    ctx.fillRect(x - 1, y - 1, 2, 2);
   }
 }
 

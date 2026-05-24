@@ -6,6 +6,7 @@ import { T, TILE_SIZE } from '../world/tiles.js';
 import { FireDragon, BOSS_ARENA } from '../entities/FireDragon.js';
 import { Projectile, dirVector } from '../entities/Projectile.js';
 import { applySwordHits } from '../mechanics/Combat.js';
+import { extractDeathCache } from '../mechanics/Death.js';
 import { rectsOverlap } from '../entities/Entity.js';
 import { Debug } from '../core/Debug.js';
 
@@ -116,7 +117,11 @@ export class BossScene extends Scene {
     }
 
     if (player.dead) {
-      if (player.deathT > 1.2) this.game.changeScene('gameover');
+      if (player.deathT > 1.2) {
+        // Bossfight death: same handling as dungeon — drop consumables, respawn at last campfire.
+        extractDeathCache(this.game.inventory);
+        this.game.changeScene('overworld', { respawned: true });
+      }
       player.update(dt, { input, tilemap: this.map, inventory: this.game.inventory, scene: this });
       return;
     }

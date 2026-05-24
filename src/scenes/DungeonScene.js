@@ -9,6 +9,7 @@ import { FireImp } from '../entities/FireImp.js';
 import { Projectile, dirVector } from '../entities/Projectile.js';
 import { applySwordHits, applyEnemyTouch } from '../mechanics/Combat.js';
 import { tryInteract, evaluateSwitches, setGates, facingInteractable, drawInteractHint } from '../mechanics/Puzzle.js';
+import { extractDeathCache } from '../mechanics/Death.js';
 import { Debug } from '../core/Debug.js';
 
 export class DungeonScene extends Scene {
@@ -80,7 +81,13 @@ export class DungeonScene extends Scene {
     }
 
     if (player.dead) {
-      if (player.deathT > 1.2) this.game.changeScene('gameover');
+      if (player.deathT > 1.2) {
+        // Soulslike: dropping the cache inside the dungeon would leave it unreachable
+        // after respawn (player teleports to overworld campfire). For now consumables are
+        // just lost on dungeon/boss deaths — future enhancement: stash cache on dungeon entrance.
+        extractDeathCache(this.game.inventory);
+        this.game.changeScene('overworld', { respawned: true });
+      }
       player.update(dt, { input, tilemap: this.tilemap, inventory: this.game.inventory, scene: this });
       return;
     }
@@ -143,7 +150,7 @@ export class DungeonScene extends Scene {
     // Combat
     const sw = player.swordHitbox();
     if (sw) {
-      const hits = applySwordHits(sw, player, this.entities);
+      const hits = applySwordHits(sw, player, this.entities, this.game.inventory);
       for (const e of hits) this.spawnHitPuff(e.x, e.y, '#fff');
       const killed = hits.filter(e => e.dead);
       for (const e of killed) {

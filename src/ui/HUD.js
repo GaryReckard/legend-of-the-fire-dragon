@@ -1,8 +1,19 @@
 // HUD: hearts, hunger, stamina, hotbar of materials, current biome label, controls hint.
 
 import { ITEMS } from '../mechanics/Inventory.js';
+import { xpForLevel } from '../mechanics/progression/Stats.js';
 
 export class HUD {
+  constructor() {
+    this.levelFlashT = 0;
+    this.levelFlashVal = 0;
+  }
+
+  flashLevelUp(level) {
+    this.levelFlashT = 2;
+    this.levelFlashVal = level;
+  }
+
   draw(ctx, game) {
     const p = game.player;
     ctx.save();
@@ -23,6 +34,37 @@ export class HUD {
     const bx = 10, by = 34;
     drawBar(ctx, bx, by, barW, barH, p.hunger / p.maxHunger, '#c87a2a', '#3b2310', 'HUNGER');
     drawBar(ctx, bx, by + 14, barW, barH, p.stamina / p.maxStamina, '#3fd06b', '#10331f', 'STAMINA');
+
+    // Level + XP bar
+    const s = p.stats;
+    const xpNeeded = xpForLevel(s.level);
+    drawBar(ctx, bx, by + 28, barW, barH, s.xp / xpNeeded, '#5db8ff', '#0e2d4d', `LV ${s.level}`);
+    if (s.unspent > 0) {
+      ctx.fillStyle = '#ffe066';
+      ctx.font = 'bold 11px "Courier New", monospace';
+      ctx.fillText(`+${s.unspent}pt`, bx + barW + 28, by + 27);
+    }
+
+    // Name (top, between hearts and right side)
+    if (p.name) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.name, bx + barW + 100, 12);
+    }
+
+    // Level-up flash
+    if (this.levelFlashT > 0) {
+      this.levelFlashT -= 1/60;
+      const a = Math.min(1, this.levelFlashT);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = '#ffe066';
+      ctx.font = 'bold 28px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`LEVEL ${this.levelFlashVal}!`, ctx.canvas.width / 2, 80);
+      ctx.restore();
+    }
 
     // Biome label (top-right)
     const biome = game.scene?.biomeLabel?.() ?? '';

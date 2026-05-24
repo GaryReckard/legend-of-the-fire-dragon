@@ -15,6 +15,11 @@ export const T = {
   ICE:         21,
   PINE:        22,
   FROZEN_ROCK: 23,
+  // 35-39: swamp
+  MUD:         35,
+  REEDS:       36,
+  SWAMP_TREE:  37,
+  BOG_WATER:   38,
   // 40-59: volcano
   ASH:         40,
   LAVA:        41,
@@ -41,6 +46,15 @@ export const T = {
   CAMPFIRE:    77,
   CHEST:       78,
   CHEST_OPEN:  79,
+  // ores (require pickaxe)
+  IRON_ORE:    80,
+  GOLD_ORE:    81,
+  // lore book pickup
+  LORE_BOOK:   82,
+  // power orb pickup (mini-boss reward)
+  POWER_ORB:   83,
+  // death cache — placed where the player last died; walk over to reclaim
+  DEATH_CACHE: 84,
 };
 
 // Properties: walkable, attackable (harvest), damage-per-sec, slow factor, biome-tag
@@ -56,6 +70,11 @@ export const TILE_PROPS = {
   [T.ICE]:          { walk: true,  slip: true, color: '#9fd5e0', accent: '#bfe3ec' },
   [T.PINE]:         { walk: false, attack: true, drops: 'wood', color: '#1c4a35', accent: '#0d2c1f' },
   [T.FROZEN_ROCK]:  { walk: false, attack: true, drops: 'stone', color: '#6f7c88', accent: '#4d5862' },
+
+  [T.MUD]:          { walk: true,  slow: 0.60, color: '#5a4030', accent: '#3e2b1f' },
+  [T.REEDS]:        { walk: false, attack: true, drops: 'wood', color: '#3e5a30', accent: '#2a3e1f' },
+  [T.SWAMP_TREE]:   { walk: false, attack: true, drops: 'wood', color: '#324a32', accent: '#1c2c1c' },
+  [T.BOG_WATER]:    { walk: false, dmg: 6, color: '#2c4030', accent: '#3a5a44' },
 
   [T.ASH]:          { walk: true,  color: '#3b302b', accent: '#2c2320' },
   [T.LAVA]:         { walk: false, dmg: 25, color: '#d83b15', accent: '#ff8a2a', glow: true },
@@ -82,6 +101,11 @@ export const TILE_PROPS = {
   [T.CAMPFIRE]:     { walk: false, campfire: true, color: '#2a1c10', accent: '#ff7733', glow: true },
   [T.CHEST]:        { walk: false, chest: true, color: '#a37127', accent: '#5d3e0d' },
   [T.CHEST_OPEN]:   { walk: false, color: '#5d3e0d', accent: '#2a1c10' },
+  [T.IRON_ORE]:     { walk: false, mine: 'stone',  drops: 'iron_ore', color: '#5a5a6c', accent: '#c8c8d0' },
+  [T.GOLD_ORE]:     { walk: false, mine: 'iron',   drops: 'gold_ore', color: '#6a5a3a', accent: '#ffd700' },
+  [T.LORE_BOOK]:    { walk: true,  pickup: 'lore', color: '#2a1c10', accent: '#a37127' },
+  [T.POWER_ORB]:    { walk: true,  pickup: 'power', color: '#0a0a14', accent: '#9fd5e0' },
+  [T.DEATH_CACHE]:  { walk: true,  pickup: 'cache', color: '#2a1c10', accent: '#dcb060' },
 };
 
 export function prop(tileId) {

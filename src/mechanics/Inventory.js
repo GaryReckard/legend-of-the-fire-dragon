@@ -1,18 +1,9 @@
-// Item dictionary + simple count store.
+// Item count store. The item *definitions* live in mechanics/items/catalog.js;
+// we re-export here so legacy imports `import { ITEMS } from '../mechanics/Inventory.js'`
+// keep working.
 
-export const ITEMS = {
-  wood:        { name: 'Wood',         icon: '🌲', stack: 99 },
-  stone:       { name: 'Stone',        icon: '🪨', stack: 99 },
-  berry:       { name: 'Berry',        icon: '🍓', stack: 99, eat: 25 },
-  cooked_meat: { name: 'Cooked Meat',  icon: '🍖', stack: 99, eat: 50 },
-  arrow:       { name: 'Arrow',        icon: '🏹', stack: 99 },
-  sword_up:    { name: 'Strong Sword', icon: '⚔', stack: 1, perm: true },
-  bow:         { name: 'Bow',          icon: '🏹', stack: 1, perm: true },
-  shield:      { name: 'Shield',       icon: '🛡', stack: 1, perm: true },
-  heat_cloak:  { name: 'Heat Cloak',   icon: '🔥', stack: 1, perm: true },
-  dungeon_key: { name: 'Dungeon Key',  icon: '🔑', stack: 9 },
-  boss_key:    { name: 'Boss Key',     icon: '🗝', stack: 1 },
-};
+import { ITEMS as CATALOG_ITEMS } from './items/catalog.js';
+export const ITEMS = CATALOG_ITEMS;
 
 export class Inventory {
   constructor() {

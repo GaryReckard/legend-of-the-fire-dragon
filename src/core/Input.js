@@ -14,12 +14,14 @@ const KEY_MAP = {
   Backquote: 'debug',
   F2: 'god',
   F3: 'reveal',
-  Digit1: 'tp1', Digit2: 'tp2', Digit3: 'tp3',
+  Digit1: 'tp1', Digit2: 'tp2', Digit3: 'tp3', Digit4: 'tp4',
   KeyB: 'boss',
   KeyH: 'heal',
   KeyM: 'mats',
   KeyN: 'spawn',
   Enter: 'confirm',
+  ShiftLeft: 'dash',
+  ShiftRight: 'dash',
 };
 
 export class Input {

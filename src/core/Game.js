@@ -5,7 +5,10 @@ import { Player } from '../entities/Player.js';
 import { Inventory } from '../mechanics/Inventory.js';
 import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
+import { Dialog } from '../ui/Dialog.js';
+import { saveGame, loadGame, hasSave } from './Save.js';
 import { TitleScene } from '../scenes/TitleScene.js';
+import { CharacterCreateScene } from '../scenes/CharacterCreateScene.js';
 import { OverworldScene } from '../scenes/OverworldScene.js';
 import { DungeonScene } from '../scenes/DungeonScene.js';
 import { BossScene } from '../scenes/BossScene.js';
@@ -24,6 +27,7 @@ export class Game {
     this.inventory = new Inventory();
     this.hud = new HUD();
     this.menu = new Menu();
+    this.dialog = new Dialog();
 
     this.player = new Player(0, 0);
     this.scene = null;
@@ -31,11 +35,22 @@ export class Game {
     this.running = false;
 
     this.paused = false;
+    this.pauseSel = 0;   // 0 = Resume, 1 = Save & Quit
     this.state = 'title'; // title|playing|menu|win|gameover
+
+    // World flags for save/load (defeated boss, opened chests, etc.)
+    this.flags = {};
+
+    // Autosave throttle
+    this._saveCd = 0;
 
     // Scenes are constructed lazily and cached
     this.scenes = {};
   }
+
+  save() { saveGame(this); }
+  load() { return loadGame(this); }
+  hasSave() { return hasSave(); }
 
   start() {
     this.changeScene('title');
@@ -48,6 +63,7 @@ export class Game {
     if (!this.scenes[name]) {
       const map = {
         title: TitleScene,
+        charcreate: CharacterCreateScene,
         overworld: OverworldScene,
         dungeon: DungeonScene,
         boss: BossScene,
@@ -80,6 +96,29 @@ export class Game {
 
     if (this.input.wasPressed('pause') && this.state === 'playing') {
       this.paused = !this.paused;
+      this.pauseSel = 0;
+    }
+
+    // Pause-menu navigation
+    if (this.paused) {
+      if (this.input.wasPressed('up'))   this.pauseSel = (this.pauseSel - 1 + 2) % 2;
+      if (this.input.wasPressed('down')) this.pauseSel = (this.pauseSel + 1) % 2;
+      if (this.input.wasPressed('confirm') || this.input.wasPressed('action')) {
+        if (this.pauseSel === 0) {
+          this.paused = false;
+        } else {
+          this.save();
+          this.paused = false;
+          this.changeScene('title');
+        }
+      }
+      return;
+    }
+
+    // Dialog takes priority over everything else when open.
+    if (this.dialog.open) {
+      this.dialog.update(dt, this.input);
+      return;
     }
 
     // Menu handling: open menu gets first crack at input. If a key both closes the menu
@@ -100,6 +139,15 @@ export class Game {
 
     if (this.paused) return;
     if (this.scene) this.scene.update(dt);
+
+    // Autosave every 20 seconds while playing.
+    if (this.state === 'playing') {
+      this._saveCd -= dt;
+      if (this._saveCd <= 0) {
+        this._saveCd = 20;
+        this.save();
+      }
+    }
   }
 
   draw() {
@@ -115,16 +163,40 @@ export class Game {
 
     if (this.paused) {
       ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Frame
+      const w = 360, h = 220;
+      const x = (canvas.width - w) / 2, y = (canvas.height - h) / 2;
+      ctx.fillStyle = '#181820'; ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#ffaa44'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 32px "Courier New", monospace';
+      ctx.font = 'bold 28px "Courier New", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('PAUSED', x + w / 2, y + 50);
+      // Options
+      const opts = ['Resume', 'Save & Quit'];
+      ctx.font = 'bold 18px "Courier New", monospace';
+      opts.forEach((label, i) => {
+        const oy = y + 100 + i * 36;
+        if (this.pauseSel === i) {
+          ctx.fillStyle = 'rgba(255,170,68,0.25)';
+          ctx.fillRect(x + 32, oy - 22, w - 64, 30);
+          ctx.fillStyle = '#ffaa44';
+          ctx.fillText('▸ ' + label, x + w / 2, oy);
+        } else {
+          ctx.fillStyle = '#ccc';
+          ctx.fillText(label, x + w / 2, oy);
+        }
+      });
+      ctx.fillStyle = '#888';
+      ctx.font = '11px "Courier New", monospace';
+      ctx.fillText('↑/↓ select · Enter to confirm · Esc to close', x + w / 2, y + h - 18);
       ctx.restore();
     }
 
     if (this.menu.open) this.menu.draw(ctx, this);
+    if (this.dialog.open) this.dialog.draw(ctx);
 
     // Debug overlay last
     const px = this.player.x, py = this.player.y;
