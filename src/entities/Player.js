@@ -6,6 +6,7 @@ import { TILE_SIZE, T, prop } from '../world/tiles.js';
 import { Debug } from '../core/Debug.js';
 import { Stats } from '../mechanics/progression/Stats.js';
 import { Equipment } from '../mechanics/Equipment.js';
+import { Haptics } from '../core/Haptics.js';
 
 const BASE_SPEED = 130;
 
@@ -189,7 +190,11 @@ export class Player extends Entity {
         return false;
       }
     }
-    return super.damage(amount, kx, ky, force);
+    const took = super.damage(amount, kx, ky, force);
+    if (took) {
+      if (this.dead) Haptics.death(); else Haptics.damage();
+    }
+    return took;
   }
 
   draw(ctx, off) {

@@ -1,4 +1,5 @@
 import { Input } from './Input.js';
+import { Touch } from './Touch.js';
 import { Camera } from './Camera.js';
 import { Debug } from './Debug.js';
 import { Player } from '../entities/Player.js';
@@ -23,6 +24,8 @@ export class Game {
     this.ctx.imageSmoothingEnabled = false;
 
     this.input = new Input();
+    this.touch = new Touch(canvas, this.input);
+    this.input.attachTouch(this.touch);
     this.camera = new Camera(canvas.width, canvas.height);
     this.inventory = new Inventory();
     this.hud = new HUD();
@@ -75,6 +78,36 @@ export class Game {
     this.scene = this.scenes[name];
     this.sceneName = name;
     this.scene.enter(payload);
+  }
+
+  // Drawn last so it overrides anything underneath. Touch-device + portrait only.
+  _drawOrientationPrompt(ctx) {
+    if (!this.touch.enabled) return;
+    const portrait = window.innerHeight > window.innerWidth;
+    if (!portrait) return;
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.92)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffaa44';
+    ctx.font = 'bold 32px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ROTATE YOUR PHONE', W/2, H/2 - 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '18px "Courier New", monospace';
+    ctx.fillText('This game is meant to be played in landscape.', W/2, H/2 + 16);
+    // Little rotation icon
+    ctx.save();
+    ctx.translate(W/2, H/2 + 70);
+    ctx.strokeStyle = '#ffaa44';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(-30, -45, 60, 90);
+    const t = Date.now() / 700;
+    ctx.rotate(Math.sin(t) * 0.3);
+    ctx.strokeStyle = '#fff';
+    ctx.strokeRect(-45, -30, 90, 60);
+    ctx.restore();
+    ctx.restore();
   }
 
   loop = (now) => {
@@ -197,6 +230,14 @@ export class Game {
 
     if (this.menu.open) this.menu.draw(ctx, this);
     if (this.dialog.open) this.dialog.draw(ctx);
+
+    // Mobile controls overlay (only renders on touch devices)
+    if (this.state === 'playing' && !this.paused && !this.menu.open && !this.dialog.open) {
+      this.touch.draw(ctx, this);
+    }
+
+    // Landscape-mandatory overlay on touch devices held in portrait
+    this._drawOrientationPrompt(ctx);
 
     // Debug overlay last
     const px = this.player.x, py = this.player.y;

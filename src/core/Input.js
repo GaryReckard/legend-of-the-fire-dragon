@@ -56,7 +56,20 @@ export class Input {
   isHeld(a) { return this.held.has(a); }
   wasPressed(a) { return this.pressed.has(a); }
 
-  // 8-directional unit-ish vector from held movement keys
+  // Programmatic press/release — used by Touch.js to feed action presses
+  // through the same pipeline as the keyboard handlers.
+  press(a) {
+    if (!this.held.has(a)) this.pressed.add(a);
+    this.held.add(a);
+  }
+  release(a) { this.held.delete(a); }
+
+  // Optional touch source. Joystick is summed into keyboard movement so both
+  // can drive the player simultaneously (handy if you ever wanted that, and
+  // also makes tests deterministic — keyboard always wins on conflict).
+  attachTouch(touch) { this.touch = touch; }
+
+  // 8-directional unit-ish vector from held movement keys, blended with joystick
   moveVector() {
     let x = 0, y = 0;
     if (this.held.has('left'))  x -= 1;
@@ -66,6 +79,11 @@ export class Input {
     if (x !== 0 && y !== 0) {
       const inv = 1 / Math.SQRT2;
       x *= inv; y *= inv;
+    }
+    // No keyboard? Use joystick.
+    if (x === 0 && y === 0 && this.touch) {
+      const j = this.touch.joyVec();
+      x = j.x; y = j.y;
     }
     return { x, y };
   }

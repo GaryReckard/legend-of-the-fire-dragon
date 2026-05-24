@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0a12" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <title>The Legend of the Dragon</title>
   <style>
     html, body {
@@ -13,12 +19,22 @@
       font-family: 'Courier New', monospace;
       overflow: hidden;
       height: 100%;
+      width: 100%;
+      /* Prevent iOS rubber-banding, pull-to-refresh, double-tap zoom */
+      overscroll-behavior: none;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
     #app {
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      height: 100dvh;     /* dynamic vh — accounts for mobile browser chrome */
+      width: 100vw;
     }
     canvas {
       image-rendering: pixelated;
@@ -26,6 +42,10 @@
       background: #000;
       box-shadow: 0 0 32px rgba(255, 80, 0, 0.25);
       border: 2px solid #444;
+      /* Maintain 4:3 — letterbox to fit viewport on any device */
+      width: min(100vw, calc(100dvh * 4 / 3));
+      height: min(100dvh, calc(100vw * 3 / 4));
+      touch-action: none;
     }
     #legend {
       position: fixed;
@@ -35,6 +55,10 @@
       color: #888;
       pointer-events: none;
       user-select: none;
+    }
+    /* Hide the keyboard hint on touch devices — the on-canvas controls speak for themselves */
+    @media (pointer: coarse) {
+      #legend { display: none; }
     }
   </style>
 </head>

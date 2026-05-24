@@ -3,6 +3,11 @@
 import { ITEMS } from '../mechanics/Inventory.js';
 import { xpForLevel } from '../mechanics/progression/Stats.js';
 
+// On touch devices everything's pixel-doubled by CSS scaling, but UI text
+// can still feel small. We bump sizes ~30% so it's readable from arm's length.
+const TOUCH_SCALE = (typeof window !== 'undefined'
+  && (('ontouchstart' in window) || navigator.maxTouchPoints > 0)) ? 1.3 : 1.0;
+
 export class HUD {
   constructor() {
     this.levelFlashT = 0;
@@ -16,29 +21,33 @@ export class HUD {
 
   draw(ctx, game) {
     const p = game.player;
+    const S = TOUCH_SCALE;
     ctx.save();
-    ctx.font = '12px "Courier New", monospace';
+    ctx.font = `${Math.round(12 * S)}px "Courier New", monospace`;
     ctx.textBaseline = 'top';
 
     // Hearts (top-left)
     const hearts = p.maxHearts();
     const cur = p.hp;
+    const heartSize = Math.round(14 * S);
+    const heartSpacing = Math.round(18 * S);
     for (let i = 0; i < hearts; i++) {
-      const hx = 10 + i * 18, hy = 10;
+      const hx = 10 + i * heartSpacing, hy = 10;
       const remaining = cur - i * 2;
-      drawHeart(ctx, hx, hy, remaining);
+      drawHeart(ctx, hx, hy, remaining, heartSize);
     }
 
     // Hunger + stamina bars below hearts
-    const barW = 100, barH = 8;
-    const bx = 10, by = 34;
+    const barW = Math.round(100 * S), barH = Math.round(8 * S);
+    const bx = 10, by = Math.round(34 * S);
+    const barGap = Math.round(14 * S);
     drawBar(ctx, bx, by, barW, barH, p.hunger / p.maxHunger, '#c87a2a', '#3b2310', 'HUNGER');
-    drawBar(ctx, bx, by + 14, barW, barH, p.stamina / p.maxStamina, '#3fd06b', '#10331f', 'STAMINA');
+    drawBar(ctx, bx, by + barGap, barW, barH, p.stamina / p.maxStamina, '#3fd06b', '#10331f', 'STAMINA');
 
     // Level + XP bar
     const s = p.stats;
     const xpNeeded = xpForLevel(s.level);
-    drawBar(ctx, bx, by + 28, barW, barH, s.xp / xpNeeded, '#5db8ff', '#0e2d4d', `LV ${s.level}`);
+    drawBar(ctx, bx, by + barGap * 2, barW, barH, s.xp / xpNeeded, '#5db8ff', '#0e2d4d', `LV ${s.level}`);
     if (s.unspent > 0) {
       ctx.fillStyle = '#ffe066';
       ctx.font = 'bold 11px "Courier New", monospace';
@@ -113,20 +122,20 @@ export class HUD {
   }
 }
 
-function drawHeart(ctx, x, y, remaining) {
+function drawHeart(ctx, x, y, remaining, size = 14) {
   // remaining: 2 = full, 1 = half, <=0 empty
   ctx.fillStyle = '#222';
   ctx.beginPath();
-  drawHeartPath(ctx, x, y, 14);
+  drawHeartPath(ctx, x, y, size);
   ctx.fill();
   ctx.fillStyle = remaining >= 2 ? '#ff3333' : (remaining === 1 ? '#ff3333' : '#444');
   if (remaining > 0) {
     ctx.save();
     if (remaining === 1) {
-      ctx.beginPath(); ctx.rect(x, y, 7, 14); ctx.clip();
+      ctx.beginPath(); ctx.rect(x, y, size / 2, size); ctx.clip();
     }
     ctx.beginPath();
-    drawHeartPath(ctx, x, y, 14);
+    drawHeartPath(ctx, x, y, size);
     ctx.fill();
     ctx.restore();
   }

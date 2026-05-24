@@ -11,6 +11,7 @@ import { SpiritOfGrove } from '../entities/SpiritOfGrove.js';
 import { rectsOverlap } from '../entities/Entity.js';
 import { LORE_BOOKS, BOOK_ORDER } from '../world/Lore.js';
 import { extractDeathCache, redeemDeathCache } from '../mechanics/Death.js';
+import { Haptics } from '../core/Haptics.js';
 import { Projectile, dirVector } from '../entities/Projectile.js';
 import { applySwordHits, applyEnemyTouch } from '../mechanics/Combat.js';
 import { tryInteract, facingInteractable, drawInteractHint } from '../mechanics/Puzzle.js';
@@ -307,6 +308,7 @@ export class OverworldScene extends Scene {
       const xp = (e.xpReward ?? e.maxHp * 8);
       const r = this.game.player.gainXp(xp, this.game.hud);
       if (r.leveledUp > 0) {
+        Haptics.level();
         this.showMessage(`LEVEL UP! Now level ${this.game.player.stats.level} — ${this.game.player.stats.unspent} stat points to spend`, 3);
       }
     }
@@ -488,6 +490,7 @@ export class OverworldScene extends Scene {
     const sw = player.swordHitbox();
     if (sw) {
       const killedHits = applySwordHits(sw, player, this.entities, this.game.inventory);
+      if (killedHits.length > 0) Haptics.hit();
       const killed = killedHits.filter(e => e.dead);
       if (killed.length > 0) this.handleDrops(killed);
       for (const e of killedHits) this.spawnHitPuff(e.x, e.y, '#fff');
