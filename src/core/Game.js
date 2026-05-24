@@ -1,0 +1,140 @@
+import { Input } from './Input.js';
+import { Camera } from './Camera.js';
+import { Debug } from './Debug.js';
+import { Player } from '../entities/Player.js';
+import { Inventory } from '../mechanics/Inventory.js';
+import { HUD } from '../ui/HUD.js';
+import { Menu } from '../ui/Menu.js';
+import { TitleScene } from '../scenes/TitleScene.js';
+import { OverworldScene } from '../scenes/OverworldScene.js';
+import { DungeonScene } from '../scenes/DungeonScene.js';
+import { BossScene } from '../scenes/BossScene.js';
+import { WinScene } from '../scenes/WinScene.js';
+import { GameOverScene } from '../scenes/GameOverScene.js';
+import { TILE_SIZE } from '../world/tiles.js';
+
+export class Game {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.ctx.imageSmoothingEnabled = false;
+
+    this.input = new Input();
+    this.camera = new Camera(canvas.width, canvas.height);
+    this.inventory = new Inventory();
+    this.hud = new HUD();
+    this.menu = new Menu();
+
+    this.player = new Player(0, 0);
+    this.scene = null;
+    this.lastTime = 0;
+    this.running = false;
+
+    this.paused = false;
+    this.state = 'title'; // title|playing|menu|win|gameover
+
+    // Scenes are constructed lazily and cached
+    this.scenes = {};
+  }
+
+  start() {
+    this.changeScene('title');
+    this.running = true;
+    requestAnimationFrame(this.loop);
+  }
+
+  changeScene(name, payload) {
+    if (this.scene) this.scene.exit();
+    if (!this.scenes[name]) {
+      const map = {
+        title: TitleScene,
+        overworld: OverworldScene,
+        dungeon: DungeonScene,
+        boss: BossScene,
+        win: WinScene,
+        gameover: GameOverScene,
+      };
+      this.scenes[name] = new map[name](this);
+    }
+    this.scene = this.scenes[name];
+    this.sceneName = name;
+    this.scene.enter(payload);
+  }
+
+  loop = (now) => {
+    if (!this.running) return;
+    const dt = Math.min(0.05, (now - this.lastTime) / 1000 || 0);
+    this.lastTime = now;
+    Debug.tickFps(dt);
+    this.update(dt);
+    this.draw();
+    this.input.endFrame();
+    requestAnimationFrame(this.loop);
+  };
+
+  update(dt) {
+    // Global keys
+    if (this.input.wasPressed('debug')) Debug.toggle();
+    if (this.input.wasPressed('god')) Debug.toggleGod();
+    if (this.input.wasPressed('reveal')) Debug.toggleReveal();
+
+    if (this.input.wasPressed('pause') && this.state === 'playing') {
+      this.paused = !this.paused;
+    }
+
+    // Menu handling: open menu gets first crack at input. If a key both closes the menu
+    // AND would re-open it (same `wasPressed` true on this frame), we'd flicker — so we
+    // return immediately whenever the menu state changed this frame.
+    if (this.menu.open) {
+      const wasOpen = true;
+      this.menu.update(dt, this);
+      if (this.menu.open) return;  // still open — skip scene update
+      if (wasOpen) return;          // menu was just closed this frame — don't immediately re-open
+    }
+
+    // Open the menu via I or C. Return so the same press doesn't get consumed again below.
+    if (this.state === 'playing' && !this.paused) {
+      if (this.input.wasPressed('inventory')) { this.menu.toggle('inventory', this); return; }
+      else if (this.input.wasPressed('craft')) { this.menu.toggle('craft', this); return; }
+    }
+
+    if (this.paused) return;
+    if (this.scene) this.scene.update(dt);
+  }
+
+  draw() {
+    const { ctx, canvas } = this;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (this.scene) this.scene.draw(ctx);
+
+    if (this.state === 'playing') {
+      this.hud.draw(ctx, this);
+    }
+
+    if (this.paused) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 32px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+      ctx.restore();
+    }
+
+    if (this.menu.open) this.menu.draw(ctx, this);
+
+    // Debug overlay last
+    const px = this.player.x, py = this.player.y;
+    Debug.draw(ctx, {
+      px, py,
+      tx: Math.floor(px / TILE_SIZE),
+      ty: Math.floor(py / TILE_SIZE),
+      biome: this.scene?.biomeAt?.(px, py) ?? '-',
+      scene: this.sceneName,
+      entityCount: (this.scene?.entities?.length) ?? 0,
+    });
+  }
+}
