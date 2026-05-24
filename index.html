@@ -40,13 +40,15 @@
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       background: #000;
-      box-shadow: 0 0 32px rgba(255, 80, 0, 0.25);
-      border: 2px solid #444;
-      /* Maintain 4:3 — letterbox to fit viewport on any device */
-      width: min(100vw, calc(100dvh * 4 / 3));
-      height: min(100dvh, calc(100vw * 3 / 4));
+      /* Canvas drawing-buffer is sized in JS to the viewport — CSS just stretches
+         to fill the page so nothing's wasted. */
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
       touch-action: none;
     }
+    #app { padding: 0; }
     #legend {
       position: fixed;
       bottom: 6px;
